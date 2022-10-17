@@ -1,0 +1,193 @@
+create table if not exists workspace
+(
+	id serial
+		constraint workspace_pk
+			primary key,
+	name varchar not null
+);
+
+alter table workspace owner to postgres;
+
+create table if not exists job_opening
+(
+	id serial
+		constraint job_opening_pk
+			primary key,
+	workspace_id integer not null
+		constraint job_opening_workspace_id_fk
+			references workspace,
+	name varchar
+);
+
+alter table job_opening owner to postgres;
+
+create index if not exists job_opening_workspace_id_index
+	on job_opening (workspace_id);
+
+create table if not exists question_type
+(
+	name varchar(100) not null
+		constraint question_type_pk
+			primary key,
+	description varchar(500) not null
+);
+
+alter table question_type owner to postgres;
+
+create table if not exists test_type
+(
+	name varchar(100) not null
+		constraint test_type_pk
+			primary key,
+	description varchar(500)
+);
+
+alter table test_type owner to postgres;
+
+create table if not exists test
+(
+	id serial
+		constraint test_pk
+			primary key,
+	job_opening_id integer not null
+		constraint test_job_opening_id_fk
+			references job_opening,
+	test_type_name varchar(100) not null
+		constraint test_test_type_name_fk
+			references test_type,
+	name varchar not null
+);
+
+alter table test owner to postgres;
+
+create index if not exists test_job_opening_id_index
+	on test (job_opening_id);
+
+create table if not exists test_version
+(
+	id serial
+		constraint test_version_pk
+			primary key,
+	test_id integer not null
+		constraint test_version_test_id_fk
+			references test
+);
+
+alter table test_version owner to postgres;
+
+create index if not exists test_version_test_id_index
+	on test_version (test_id);
+
+create table if not exists question
+(
+	id serial
+		constraint question_pk
+			primary key,
+	test_version_id integer not null
+		constraint question_test_version_id_fk
+			references test_version,
+	question_type_name varchar(100) not null
+		constraint question_question_type_name_fk
+			references question_type,
+	content jsonb not null,
+	answer_choices character varying[],
+	correct_answers character varying[] not null
+);
+
+alter table question owner to postgres;
+
+create index if not exists question_test_version_id_index
+	on question (test_version_id);
+
+create index if not exists question_question_type_name_index
+	on question (question_type_name);
+
+create table if not exists test_result
+(
+	id serial
+		constraint test_result_pk
+			primary key,
+	job_opening_id integer not null
+		constraint test_result_job_opening_id_fk
+			references job_opening,
+	test_version_id integer not null
+		constraint test_result_test_version_id_fk
+			references test_version,
+	email varchar(300) not null,
+	email_normalized varchar(300) not null,
+	ip_address inet not null,
+	started_at timestamp with time zone default statement_timestamp() not null,
+	submitted_after interval,
+	score numeric(3,2),
+	has_fraud_events boolean,
+	updated_at timestamp with time zone default statement_timestamp() not null
+);
+
+alter table test_result owner to postgres;
+
+create index if not exists test_result_job_opening_id_index
+	on test_result (job_opening_id);
+
+create index if not exists test_result_test_version_id_index
+	on test_result (test_version_id);
+
+create index if not exists test_result_score_index
+	on test_result (score);
+
+create index if not exists test_result_email_normalized_index
+	on test_result (email_normalized);
+
+create index if not exists test_result_submitted_after_index
+	on test_result (submitted_after);
+
+create index if not exists test_result_ip_address_index
+	on test_result (ip_address);
+
+create table if not exists answer
+(
+	id serial
+		constraint answer_pk
+			primary key,
+	question_id integer not null
+		constraint answer_question_id_fk
+			references question,
+	test_result_id integer not null
+		constraint answer_test_result_id_fk
+			references test_result,
+	candidate_answers character varying[] not null,
+	score numeric(3,2),
+	fraud_events jsonb
+);
+
+alter table answer owner to postgres;
+
+create index if not exists answer_question_id_index
+	on answer (question_id);
+
+create index if not exists answer_test_result_id_index
+	on answer (test_result_id);
+
+create table if not exists question_history
+(
+	id serial
+		constraint question_history_pk
+			primary key,
+	question_id integer not null
+		constraint question_history_question_id_fk
+			references question,
+	test_version_id integer not null
+		constraint question_history_test_version_id_fk
+			references test_version,
+	question_type_name varchar(100) not null
+		constraint question_history_question_type_name_fk
+			references question_type,
+	content jsonb not null,
+	answer_choices character varying[],
+	correct_answers character varying[] not null
+);
+
+alter table question_history owner to postgres;
+
+create index if not exists question_history_test_version_id_index
+	on question_history (test_version_id);
+
