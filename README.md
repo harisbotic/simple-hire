@@ -73,3 +73,4 @@ from (
 where x.rn >= 101 and x.rn <= 200;
 ```
 
+![image](https://user-images.githubusercontent.com/6454831/196156467-00265811-edc8-4bfb-ab43-3d577cd7383c.png)
